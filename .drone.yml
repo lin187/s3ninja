@@ -1,63 +1,166 @@
+---
+kind: pipeline
+name: default
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  disable: true
+
 workspace:
   base: /drone
-  path: src/github.com/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}
+  path: "src/github.com/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}"
 
-scireum_volumes: &scireum_volumes
-  - /var/run/docker.sock:/var/run/docker.sock
-  - /var/repos/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}:/drone/src/github.com/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}
-  - /root/.m2:/root/.m2
-  - /root/.gnupg:/root/.gnupg
-clone:
-  git:
-    image: plugins/git
-    volumes: *scireum_volumes
-pipeline:
-  compile:
-    image: scireum/sirius-build
-    commands:
-      - mvn clean compile
-    volumes: *scireum_volumes
-    when:
-      event: push
-  test:
-    image: scireum/sirius-build
-    commands:
-      - mvn clean test
-    volumes: *scireum_volumes
-    when:
-      event: pull_request
-  sonar:
-    image: scireum/sirius-build
-    commands:
-      - sed -i 's/DEVELOPMENT-SNAPSHOT/${DRONE_TAG}/g' pom.xml
-      - mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test sonar:sonar -Dsonar.projectKey=${DRONE_REPO_NAME}
-    volumes: *scireum_volumes
-    when:
-      event: tag
-  package:
-    image: scireum/sirius-build
-    commands:
-      - sed -i 's/DEVELOPMENT-SNAPSHOT/${DRONE_TAG}/g' pom.xml
-      - mvn clean package -DskipTests
-    volumes: *scireum_volumes
-    when:
-      event: tag
-  publish:
-    image: plugins/docker
+steps:
+- name: git
+  pull: default
+  image: plugins/git
+  volumes:
+  - name: 2f7661722f72756e2f646f636b65722e736f636b
+    path: /var/run/docker.sock
+  - name: 2f7661722f7265706f732f247b44524f4e455f5245504f5f4e414d4553504143457d2f247b44524f4e455f5245504f5f4e414d457d
+    path: "/drone/src/github.com/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}"
+  - name: 2f726f6f742f2e6d32
+    path: /root/.m2
+  - name: 2f726f6f742f2e676e757067
+    path: /root/.gnupg
+
+- name: compile
+  pull: default
+  image: scireum/sirius-build
+  commands:
+  - mvn clean compile
+  volumes:
+  - name: 2f7661722f72756e2f646f636b65722e736f636b
+    path: /var/run/docker.sock
+  - name: 2f7661722f7265706f732f247b44524f4e455f5245504f5f4e414d4553504143457d2f247b44524f4e455f5245504f5f4e414d457d
+    path: "/drone/src/github.com/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}"
+  - name: 2f726f6f742f2e6d32
+    path: /root/.m2
+  - name: 2f726f6f742f2e676e757067
+    path: /root/.gnupg
+  when:
+    event:
+    - push
+
+- name: test
+  pull: default
+  image: scireum/sirius-build
+  commands:
+  - mvn clean test
+  volumes:
+  - name: 2f7661722f72756e2f646f636b65722e736f636b
+    path: /var/run/docker.sock
+  - name: 2f7661722f7265706f732f247b44524f4e455f5245504f5f4e414d4553504143457d2f247b44524f4e455f5245504f5f4e414d457d
+    path: "/drone/src/github.com/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}"
+  - name: 2f726f6f742f2e6d32
+    path: /root/.m2
+  - name: 2f726f6f742f2e676e757067
+    path: /root/.gnupg
+  when:
+    event:
+    - pull_request
+
+- name: sonar
+  pull: default
+  image: scireum/sirius-build
+  commands:
+  - "sed -i 's/DEVELOPMENT-SNAPSHOT/${DRONE_TAG}/g' pom.xml"
+  - "mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test sonar:sonar -Dsonar.projectKey=${DRONE_REPO_NAME}"
+  volumes:
+  - name: 2f7661722f72756e2f646f636b65722e736f636b
+    path: /var/run/docker.sock
+  - name: 2f7661722f7265706f732f247b44524f4e455f5245504f5f4e414d4553504143457d2f247b44524f4e455f5245504f5f4e414d457d
+    path: "/drone/src/github.com/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}"
+  - name: 2f726f6f742f2e6d32
+    path: /root/.m2
+  - name: 2f726f6f742f2e676e757067
+    path: /root/.gnupg
+  when:
+    event:
+    - tag
+
+- name: package
+  pull: default
+  image: scireum/sirius-build
+  commands:
+  - "sed -i 's/DEVELOPMENT-SNAPSHOT/${DRONE_TAG}/g' pom.xml"
+  - mvn clean package -DskipTests
+  volumes:
+  - name: 2f7661722f72756e2f646f636b65722e736f636b
+    path: /var/run/docker.sock
+  - name: 2f7661722f7265706f732f247b44524f4e455f5245504f5f4e414d4553504143457d2f247b44524f4e455f5245504f5f4e414d457d
+    path: "/drone/src/github.com/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}"
+  - name: 2f726f6f742f2e6d32
+    path: /root/.m2
+  - name: 2f726f6f742f2e676e757067
+    path: /root/.gnupg
+  when:
+    event:
+    - tag
+
+- name: publish
+  pull: default
+  image: plugins/docker
+  settings:
     repo: scireum/s3-ninja
-    secrets: [ docker_username, docker_password ]
     tags:
-      - ${DRONE_TAG}
-    volumes: *scireum_volumes
-    when:
-      event: tag
-  site:
-    image: scireum/sirius-build
-    commands:
-      - echo "$SSH_KEY" > /tmp/sshkey
-      - chmod 600 /tmp/sshkey
-      - rsync -e 'ssh -i /tmp/sshkey -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' -r --delete src/site/ ssh-w0158395@w0158395.kasserver.com:/www/htdocs/w0158395/s3ninja.net/
-    volumes: *scireum_volumes
-    secrets: [ ssh_key ]
-    when:
-      event: tag
+    - "${DRONE_TAG}"
+  environment:
+    DOCKER_PASSWORD:
+      from_secret: docker_password
+    DOCKER_USERNAME:
+      from_secret: docker_username
+  volumes:
+  - name: 2f7661722f72756e2f646f636b65722e736f636b
+    path: /var/run/docker.sock
+  - name: 2f7661722f7265706f732f247b44524f4e455f5245504f5f4e414d4553504143457d2f247b44524f4e455f5245504f5f4e414d457d
+    path: "/drone/src/github.com/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}"
+  - name: 2f726f6f742f2e6d32
+    path: /root/.m2
+  - name: 2f726f6f742f2e676e757067
+    path: /root/.gnupg
+  when:
+    event:
+    - tag
+
+- name: site
+  pull: default
+  image: scireum/sirius-build
+  commands:
+  - "echo \"$SSH_KEY\" > /tmp/sshkey"
+  - chmod 600 /tmp/sshkey
+  - "rsync -e 'ssh -i /tmp/sshkey -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' -r --delete src/site/ ssh-w0158395@w0158395.kasserver.com:/www/htdocs/w0158395/s3ninja.net/"
+  environment:
+    SSH_KEY:
+      from_secret: ssh_key
+  volumes:
+  - name: 2f7661722f72756e2f646f636b65722e736f636b
+    path: /var/run/docker.sock
+  - name: 2f7661722f7265706f732f247b44524f4e455f5245504f5f4e414d4553504143457d2f247b44524f4e455f5245504f5f4e414d457d
+    path: "/drone/src/github.com/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}"
+  - name: 2f726f6f742f2e6d32
+    path: /root/.m2
+  - name: 2f726f6f742f2e676e757067
+    path: /root/.gnupg
+  when:
+    event:
+    - tag
+
+volumes:
+- name: 2f7661722f72756e2f646f636b65722e736f636b
+  host:
+    path: /var/run/docker.sock
+- name: 2f7661722f7265706f732f247b44524f4e455f5245504f5f4e414d4553504143457d2f247b44524f4e455f5245504f5f4e414d457d
+  host:
+    path: "/var/repos/${DRONE_REPO_NAMESPACE}/${DRONE_REPO_NAME}"
+- name: 2f726f6f742f2e6d32
+  host:
+    path: /root/.m2
+- name: 2f726f6f742f2e676e757067
+  host:
+    path: /root/.gnupg
+
+...
